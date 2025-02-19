@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.metrics import mean_squared_error, f1_score
 
 from utils import seed_all, metrics_calculate, AdaWeightedLoss, get_memory_loss, anomaly_scoring
-from memory_module import MemModule
+from memory_module import BidirectionalInteractiveMemModule
 import pickle
 
 seed_all(2021)
@@ -334,6 +334,7 @@ class MemFGANModel(object):
 
     def dis_ar_train(self, x, y):
         self.ar_optimizer.zero_grad()
+        # x=x.unsqueeze(1)
 
         bsz, seq, fd = x.shape
         re_x, z, att = self.ae(x)

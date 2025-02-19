@@ -4,7 +4,7 @@ import h5py
 import os
 from time import time
 from copy import deepcopy
-
+from memory_module import BidirectionalInteractiveMemModule
 import torch as t
 from torch.optim import Adam, lr_scheduler
 import torch.nn as nn
@@ -18,7 +18,7 @@ from torch.optim import Adam, lr_scheduler
 import numpy as np
 from sklearn.metrics import mean_squared_error, f1_score
 from utils import seed_all, metrics_calculate, AdaWeightedLoss, get_memory_loss, anomaly_scoring
-from memory_module import MemModule
+# from memory_module import MemModule
 import pickle
 import torch
 import torch.nn as nn
@@ -102,11 +102,11 @@ class TransformerEncoder(nn.Module):
 
     def forward(self, inp):
         # inp shape: [batch_size, seq_len, inp_dim]
-        inp = inp.permute(1, 0, 2)  # Change shape to [seq_len, batch_size, inp_dim]
+
         inp = F.relu(self.linear1(inp))  # Pass through linear layer before transformer
         out = self.transformer_encoder(inp)
         z = self.linear2(out)  # Output of transformer passed through linear layer
-        return z.permute(1, 0, 2)  # Convert back to [batch_size, seq_len, z_dim]
+        return z  # Convert back to [batch_size, seq_len, z_dim]
 
 # Transformer Decoder Layer
 class TransformerDecoder(nn.Module):
@@ -144,14 +144,14 @@ class TransformerAutoEncoder(nn.Module):
 
         # 定义 Transformer 编码器
         self.encoder = TransformerEncoder(inp_dim, z_dim, hidden_dim, transformer_hidden_dim,
-                                          num_layers, num_heads, dropout=dropout)
+                                          num_layers, num_heads)
 
         # 定义 Transformer 解码器
         self.decoder = TransformerDecoder(inp_dim, z_dim, hidden_dim, transformer_hidden_dim,
-                                          num_layers, num_heads, dropout=dropout)
+                                          num_layers, num_heads)
 
         # 定义 Memory模块
-        self.mem_rep = MemModule(mem_dim=mem_dim, fea_dim=z_dim, shrink_thres=shrink_thres)
+        self.mem_rep = BidirectionalInteractiveMemModule(mem_dim=mem_dim, fea_dim=z_dim, shrink_thres=shrink_thres)
 
     def forward(self, inp):
         # inp shape: [batch_size, seq_len, inp_dim]
@@ -160,7 +160,7 @@ class TransformerAutoEncoder(nn.Module):
         z = self.encoder(inp)
         
         # Memory模块处理
-        res_mem = self.mem_rep(z)
+        res_mem = self.mem_rep(z,z)
         z = res_mem['output']
         att = res_mem['att']
         

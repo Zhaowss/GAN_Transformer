@@ -11,7 +11,7 @@ import random
 import torch.nn as nn
 from matplotlib import pyplot as plt
 import pickle
-
+import  pandas as pd
 def seed_all(seed=2020):
     random.seed(seed)
     t.manual_seed(seed)
@@ -173,18 +173,20 @@ def remove_all_same(train_x, test_x):
     return train_x[:, remain_idx], test_x[:, remain_idx]
 
 
-def load_data(data_prefix, val_size, window_size=100, stride=1, batch_size=64, dataloder=False, noise=0, prob = 0):
+def load_data(data_prefix, val_size, window_size=100, stride=1, batch_size=4, dataloder=False, noise=0, prob = 0):
     # root path
-    root_path = './data'
+    root_path = './KDDcup2019'
+    Data_train=pd.read_csv(os.path.join(root_path, 'Training.csv'),header=None)
+    Data_test = pd.read_csv(os.path.join(root_path, 'Testing.csv'), header=None)
 
     # load data from .pkl file
-    train_x = load_pickle(os.path.join(root_path, 'train.pkl'))
-    train_y = np.array(load_pickle(os.path.join(root_path, 'train_label.pkl')), dtype=np.int)
-    test_x = load_pickle(os.path.join(root_path, 'test.pkl'))
-    test_y = np.array(load_pickle(os.path.join(root_path, 'test_label.pkl')), dtype=np.int)
+    train_x = Data_train.iloc[:,1:42]
+    train_y = Data_train.iloc[:,0]
+    test_x = Data_test.iloc[:,1:42]
+    test_y =Data_test.iloc[:,0]
 
     # remove columns have 0 variance
-    train_x, test_x = remove_all_same(train_x, test_x)
+    # train_x, test_x = remove_all_same(train_x, test_x)
     # train_test_split
     nc = train_x.shape[1]
     train_len = int(len(train_x) * (1-val_size))
@@ -199,16 +201,13 @@ def load_data(data_prefix, val_size, window_size=100, stride=1, batch_size=64, d
 
     if dataloder:
         # windowed data
-        train_x = get_from_one(train_x, window_size, stride)
-        train_y = get_from_one(train_y, window_size, stride)
+        train_x = get_from_one(np.array(train_x),window_size=1,stride=1)
+        train_y = get_from_one(np.array(train_y),window_size=1,stride=1)
         print('Training data:', train_x.shape)
-        # train_y has no meaning, only used for TensorDataset
-        #train_y = np.zeros(len(train_x))  #zhy 引入少样本标签
-        # train_c_x = get_from_one(train_c_x, window_size, stride)
-        # train_c_y = get_from_one(train_c_y, window_size, stride)
+
 
         train_dataset = TensorDataset(t.Tensor(train_x), t.LongTensor(train_y))
-        # train_c_dataset = TensorDataset(t.Tensor(train_c_x), t.LongTensor(train_c_y))
+
 
         data_loader = {"train": DataLoader(
             dataset=train_dataset,

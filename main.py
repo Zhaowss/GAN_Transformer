@@ -3,6 +3,8 @@
 import torch as t
 from utils import load_data, seed_all
 from MemFGAN import MemFGANModel, RNNAutoEncoder, MLPDiscriminator, RNNClassifier
+
+from MemFGANTrans import MemFGANModel, TransformerEncoder, MLPDiscriminator, TransformerClassifier,TransformerAutoEncoder
 import os
 
 
@@ -12,13 +14,13 @@ seed_all(2021)
 params = {
     'data_prefix': 'msl',
     'val_size': 0.3,
-    'batch_size': 256,
+    'batch_size': 4,
     'stride': 1,
-    'window_size': 100,
+    'window_size': 1,
 
-    'z_dim': 10,
-    'hidden_dim': 50,  # 50 for msl, smap and swat, 100 for wadi
-    'rnn_hidden_dim': 50,  # 50 for msl, smap and swat, 100 for wadi
+    'z_dim': 2000,
+    'hidden_dim': 41,  # 50 for msl, smap and swat, 100 for wadi
+    'rnn_hidden_dim': 41,  # 50 for msl, smap and swat, 100 for wadi
     'num_layers': 1,
     'bidirectional': True,
     'cell': 'lstm',  # 'lstm' for msl, smap and swat, 'gru' for wadi
@@ -62,22 +64,22 @@ def main():
                      noise=params['noise'],
                      prob=params['prob'])
 
-    model = MemFGANModel(ae=RNNAutoEncoder(inp_dim=data['nc'],
+    model = MemFGANModel(ae=TransformerAutoEncoder(inp_dim=data['nc'],
                                              z_dim=params['z_dim'],
                                              hidden_dim=params['hidden_dim'],
-                                             rnn_hidden_dim=params['rnn_hidden_dim'],
+                                             transformer_hidden_dim=params['rnn_hidden_dim'],
                                              num_layers=params['num_layers'],
-                                             bidirectional=params['bidirectional'],
-                                             cell=params['cell'],
+                                             num_heads=params['bidirectional'],
                                              mem_dim=params['mem_dim'],
                                              shrink_thres=params['shrinkthres']),
                            dis_ar=MLPDiscriminator(inp_dim=data['nc'],
                                                    hidden_dim=params['hidden_dim']),
-                           cl=RNNClassifier(feature_dim=params['feature_dim'],
+                           cl=TransformerClassifier(feature_dim=params['feature_dim'],
                                             hidden_dim=params['hidden_dim'],
-                                            rnn_hidden_dim=params['rnn_hidden_dim'],
+                                            transformer_hidden_dim=params['rnn_hidden_dim'],
                                             num_layers=params['num_layers'],
-                                            bidirectional=params['bidirectional']),
+                                            num_heads=2,
+                                            dropout=0.2),
                            data_loader=data, **params)
     model.train()
     model.test()
